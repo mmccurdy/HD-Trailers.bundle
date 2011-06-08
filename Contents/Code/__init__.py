@@ -77,7 +77,11 @@ def VideosMenu(sender, url):
         videoUrl = res.get('href')
         if defaultRes == 'Prompt' or defaultRes == resTitle:
           dir.Append(VideoItem(videoUrl, title='%s %s' % (baseTitle, resTitle)))
-  return dir
+
+  if len(dir) == 0:
+    return MessageContainer('Empty', "There aren't any items to display")
+  else:
+    return dir
 
 ####################################################################################################
 def GetThumb(url):
