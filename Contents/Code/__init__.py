@@ -4,26 +4,29 @@
 # TODO: 
 # Make Yahoo! quality selection work (right now it will play 1080p or the first available quality failing that).
 # Library alphabetical section calls are slow, but mostly because the underlying pages are huge.
+# Thumbnails from the site are poster aspect ratio, which looks awful in the VideoClipObject list previews in mediastream.
 
-TITLE 		= 'HD Trailers'
-BASE_URL 		= 'http://www.hd-trailers.net'
-LATEST 		= '%s/Page/%%d' % BASE_URL
-LIBRARY 		= '%s/PosterLibrary/%%s' % BASE_URL
+TITLE			= 'HD Trailers'
+BASE_URL		= 'http://www.hd-trailers.net'
+LATEST			= '%s/Page/%%d' % BASE_URL
+LIBRARY			= '%s/PosterLibrary/%%s' % BASE_URL
 MOST_WATCHED	= '%s/most-watched/' % BASE_URL
-TOP_10 		= '%s/TopMovies/' % BASE_URL
-OPENING 		= '%s/OpeningThisWeek/' % BASE_URL
-COMING_SOON 	= '%s/ComingSoon/' % BASE_URL
+TOP_10			= '%s/TopMovies/' % BASE_URL
+OPENING			= '%s/OpeningThisWeek/' % BASE_URL
+COMING_SOON		= '%s/ComingSoon/' % BASE_URL
 NEW_AT_NETFLIX	= '%s/netflix-new-releases/' % BASE_URL
-ART 			= 'art-default.jpg'
-ICON 		= 'icon-default.png'
-USER_AGENT	= 'Apple Mac OS X v10.6.7 CoreMedia v1.0.0.10J869'
+ART				= 'art-default.jpg'
+ICON			= 'icon-default.png'
+USER_AGENT		= 'Apple Mac OS X v10.6.7 CoreMedia v1.0.0.10J869'
 	
 SOURCES		= {	
-				'apple.com'		: 'Apple',
-				'yahoo.com'		: 'Yahoo!',
-				'moviefone.com'	: 'Moviefone',
+				'apple.com'			: 'Apple',
+				'yahoo.com'			: 'Yahoo!',
+				'moviefone.com'		: 'Moviefone',
 				'youtube.com'		: 'YouTube',
-				'hd-trailers.net' 	: 'HD Trailers'
+				'hd-trailers.net' 	: 'HD Trailers',
+				'wdmp.rd.llnwd.net' : 'HD Trailers',
+				'disney.com' 		: 'HD Trailers'
 			  }
 
 ####################################################################################################
@@ -76,6 +79,7 @@ def MoviesMenu(url, title, page=1):
 			movie_title = movie.xpath('./a/img')[0].get('title')
 		except:
 			movie_title = ''.join(movie.xpath('.//text()')).strip()
+		
 		try:
 			thumb_url = movie.xpath('./a/img')[0].get('src')
 		except:
@@ -97,7 +101,7 @@ def MovieMenu(url, title, thumb_url, section=None):
 
 	if trailers['Trailers'] and trailers['Clips'] and section == None:
 		Log('canonical url is -----> ' + trailers['Trailers'][0]['item_urls']['source_url'])
-		latest = SanitizeSourceVideo(trailers['Trailers'][0], trailers['description'])
+		latest = SanitizeSourceVideo(trailers['Trailers'][0], trailers['description'], thumb_url)
 		if latest:
 			oc.add(VideoClipObject(url = latest.url,thumb=thumb_url, title='Latest Trailer'))
 		oc.add(DirectoryObject(key = Callback(MovieMenu, url=url, title=title, thumb_url=thumb_url, section='Trailers'), title='Trailers', thumb=Callback(Thumb, url=thumb_url)))
@@ -107,7 +111,7 @@ def MovieMenu(url, title, thumb_url, section=None):
 			section = 'Trailers'
 		for item in trailers[section]:
 			video_clip = None
-			video_clip = SanitizeSourceVideo(item,trailers['description'])
+			video_clip = SanitizeSourceVideo(item,trailers['description'],thumb_url)
 			if video_clip:
 				oc.add(video_clip)
 
@@ -153,7 +157,7 @@ def BuildTrailerDict(url):
 ####################################################################################################
 # Returns a sanitized VideoClipObject from a Trailers dict line item
 
-def SanitizeSourceVideo(item, description):
+def SanitizeSourceVideo(item, description, thumb_url):
 	item_url = item['item_urls']['source_url']
 	video_clip = None
 	
@@ -186,7 +190,7 @@ def SanitizeSourceVideo(item, description):
 			url = item['item_urls']['1080p']
 		except:
 			url = item['item_urls'].itervalues().next()
-		video_clip = VideoClipObject(url = url, title = item_title, summary = description)
+		video_clip = VideoClipObject(url = url, title = item_title, summary = description, thumb=Callback(Thumb, url=thumb_url))
 	
 	if not video_clip:
 		Log('Don\'t know how to play source video at URL: %s' % item_url)

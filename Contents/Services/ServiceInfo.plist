@@ -2,29 +2,22 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>Search</key>
-    <dict>
-      <key>HD-Trailers</key>
-      <dict>
-        <key>Identifier</key>
-        <string>com.plexapp.plugins.hdtrailers</string>
-      </dict>
-    </dict>
   <key>URL</key>
   	<dict>
     	<key>HD-Trailers</key>
     	<dict>
       	<key>URLPatterns</key>
       		<array>
-        		<string>http://([^.]+.)?hd-trailers.net/.+</string>
-            <!-- make the this plugin service specifically handle these URLs to raw videos -->
+            <!-- make the this channel service specifically handle these URLs to raw videos used on the site -->
             <string>http://playlist.yahoo.com\/.+</string>
             <string>http://([^.]+.)?stream.aol.com\/.+</string>
             <string>http://([^.]+.)?wdmp.rd.llnwd.net\/.+</string>
       		</array>
       	<key>TestURLs</key>
       		<array>
-        		<string>http://www.hd-trailers.net/movie/battleship/</string>
+        		<string>http://playlist.yahoo.com/makeplaylist.dll?sdm=web&amp;pt=rd&amp;sid=131852575</string>
+            <string>http://pdl.stream.aol.com/pdlext/aol/brightcove/ame/201205/04/43839/amazingspidermanthe_trlr_03_1080p_dl.mov</string>
+            <string>http://wdmp.rd.llnwd.net/wdsmp/Brave/Interstitials/Triplets/BRAVE_Character_Interstitial_Triplets_1080.mov</string>
       		</array>
     	</dict>
   	</dict>
