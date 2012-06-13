@@ -1,0 +1,69 @@
+HEADERS = HTTP_HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_4) AppleWebKit/536.5 (KHTML, like Gecko) Chrome/19.0.1084.54 Safari/536.5" }
+
+####################################################################################################
+def MetadataObjectForURL(url):
+	
+	html = HTML.ElementFromURL(url, headers = HEADERS)
+
+	title = html.xpath('//h1[@class="previewTitle"]')[0].text
+	summary = html.xpath('//span[@itemprop="description"]')[0].text
+	thumb = html.xpath('//span[@class="topTableImage"]/img')[0].get('src')
+	clip_url = html.xpath('//a[@class="playLatest"]')[0].get('href')
+
+	return VideoClipObject(
+			 url = clip_url,
+			 title = title,
+			 summary = summary,
+			 thumb = thumb)
+	
+
+####################################################################################################
+def MediaObjectsForURL(url):
+
+	return [
+		MediaObject(
+			parts = [PartObject(key=Callback(PlayVideo, url=url, fmt='h1080p'))],
+			video_resolution = '1080',
+			container = Container.MP4,
+			video_codec = VideoCodec.H264,
+			audio_codec = AudioCodec.AAC,
+			audio_channels = 2,
+			optimized_for_streaming = True
+		),
+		MediaObject(
+			parts = [PartObject(key=Callback(PlayVideo, url=url, fmt='h720p'))],
+			video_resolution = '720',
+			container = Container.MP4,
+			video_codec = VideoCodec.H264,
+			audio_codec = AudioCodec.AAC,
+			audio_channels = 2,
+			optimized_for_streaming = True
+		),
+		MediaObject(
+			parts = [PartObject(key=Callback(PlayVideo, url=url, fmt='h480p'))],
+			video_resolution = '480',
+			container = Container.MP4,
+			video_codec = VideoCodec.H264,
+			audio_codec = AudioCodec.AAC,
+			audio_channels = 2,
+			optimized_for_streaming = True
+		)
+	]
+		
+
+####################################################################################################
+def PlayVideo(url, fmt=''):
+
+	if 'playlist.yahoo.com' in url:
+		try:
+			r = HTTP.Request(url, follow_redirects=False).content
+		except Ex.RedirectError, e:
+			if e.headers.has_key('Location'):
+				url = e.headers['Location']
+
+	return Redirect(url)	
+
+
+####################################################################################################
+def NormalizeURL(url):
+	return url

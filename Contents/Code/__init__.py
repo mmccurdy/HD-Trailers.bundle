@@ -1,92 +1,206 @@
-# Icon and Code by Ryan McNally. Art by jpmatth on flicker http://www.flickr.com/photos/jpmatth/979337931/
-import string
+# Original Icon and Code by Ryan McNally. Art by jpmatth on flicker http://www.flickr.com/photos/jpmatth/979337931/
+# 2.1 rewrite, URL service by Mike McCurdy June 2012.
 
-BASE = 'http://www.hd-trailers.net'
-TOP_10 = '%s/TopMovies/' % BASE
-LATEST = '%s/Page/%%d' % BASE
-LIBRARY = '%s/PosterLibrary/%%s' % BASE
-OPENING = '%s/OpeningThisWeek/' % BASE
-COMING_SOON = '%s/ComingSoon/' % BASE
-BLU_RAY = '%s/BluRay/' % BASE
-ART = 'art-default.jpg'
-ICON = 'icon-default.png'
+# TODO: 
+# Make Yahoo! quality selection work (right now it will play 1080p or the first available quality failing that).
+# Library alphabetical section calls are slow, but mostly because the underlying pages are huge.
+
+TITLE 		= 'HD Trailers'
+BASE_URL 		= 'http://www.hd-trailers.net'
+LATEST 		= '%s/Page/%%d' % BASE_URL
+LIBRARY 		= '%s/PosterLibrary/%%s' % BASE_URL
+MOST_WATCHED	= '%s/most-watched/' % BASE_URL
+TOP_10 		= '%s/TopMovies/' % BASE_URL
+OPENING 		= '%s/OpeningThisWeek/' % BASE_URL
+COMING_SOON 	= '%s/ComingSoon/' % BASE_URL
+NEW_AT_NETFLIX	= '%s/netflix-new-releases/' % BASE_URL
+ART 			= 'art-default.jpg'
+ICON 		= 'icon-default.png'
+USER_AGENT	= 'Apple Mac OS X v10.6.7 CoreMedia v1.0.0.10J869'
+	
+SOURCES		= {	
+				'apple.com'		: 'Apple',
+				'yahoo.com'		: 'Yahoo!',
+				'moviefone.com'	: 'Moviefone',
+				'youtube.com'		: 'YouTube',
+				'hd-trailers.net' 	: 'HD Trailers'
+			  }
 
 ####################################################################################################
 def Start():
-  Plugin.AddPrefixHandler('/video/hdtrailers', MainMenu, 'HD Trailers.net', ICON, ART)
-  Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
 
-  MediaContainer.art = R(ART)
-  MediaContainer.title1 = 'HD Trailers.net'
-  MediaContainer.userAgent = 'Apple Mac OS X v10.6.7 CoreMedia v1.0.0.10J869'
-  MediaContainer.viewGroup = 'List'
-  DirectoryItem.thumb = R(ICON)
+	Plugin.AddPrefixHandler('/video/hdtrailers', MainMenu, 'HD Trailers.net', ICON, ART)
 
-  HTTP.CacheTime = CACHE_1HOUR
-  HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:2.0.1) Gecko/20100101 Firefox/4.0.1'
+	ObjectContainer.art = R(ART)
+	ObjectContainer.title1 = TITLE
+
+	HTTP.CacheTime = 300
+	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20100101 Firefox/12.0'
 
 ####################################################################################################
 def MainMenu():
-  dir = MediaContainer()
-  dir.Append(Function(DirectoryItem(Videos, title='Top 10'), url=TOP_10))
-  dir.Append(Function(DirectoryItem(Latest, title='Latest')))
-  dir.Append(Function(DirectoryItem(Videos, title='Opening'), url=OPENING))
-  dir.Append(Function(DirectoryItem(Videos, title='Coming Soon'), url=COMING_SOON))
-  dir.Append(Function(DirectoryItem(Videos, title='Blu-Ray'), url=BLU_RAY))
-  dir.Append(Function(DirectoryItem(Library, title='Library')))
-  dir.Append(PrefsItem(title='Preferences...', thumb=R('icon-prefs.png')))
-  return dir
+	
+	oc = ObjectContainer()
+	oc.add(DirectoryObject(key=Callback(MoviesMenu, url=LATEST, title='Latest'), title='Latest', thumb=R(ICON)))
+	oc.add(DirectoryObject(key=Callback(LibraryAlphaList), title='Library', thumb=R(ICON)))
+	oc.add(DirectoryObject(key=Callback(MoviesMenu, url=MOST_WATCHED, title='Most Watched This Week'), title='Most Watched', thumb=R(ICON)))
+	oc.add(DirectoryObject(key=Callback(MoviesMenu, url=TOP_10, title='Box OfficeTop 10'), title='Box Office Top 10', thumb=R(ICON)))
+	oc.add(DirectoryObject(key=Callback(MoviesMenu, url=OPENING, title='Opening This Week'), title='Opening This Week', thumb=R(ICON)))
+	oc.add(DirectoryObject(key=Callback(MoviesMenu, url=COMING_SOON, title='Coming Soon'), title='Coming Soon', thumb=R(ICON)))
+	oc.add(DirectoryObject(key=Callback(MoviesMenu, url=NEW_AT_NETFLIX, title='New @ Netflix'), title='New @ Netflix', thumb=R(ICON)))
+	return oc
+
 
 ####################################################################################################
-def Latest(sender, page=1):
-  dir = Videos(sender, url=LATEST % page)
-  dir.Append(Function(DirectoryItem(Latest, title='More...'), page=page+1))
-  return dir
+def LibraryAlphaList():
+
+	oc = ObjectContainer(title2='Library')
+	oc.add(DirectoryObject(key=Callback(MoviesMenu, url=LIBRARY % '0', title='Library - #', page=0), title="#"))
+	for page in map(chr, range(65, 91)):
+		oc.add(DirectoryObject(key=Callback(MoviesMenu, url=LIBRARY % page, title='Library - ' + page, page=page), title=page))
+	return oc
+
 
 ####################################################################################################
-def Library(sender):
-  dir = MediaContainer(title=sender.itemTitle)
-  for page in list(string.uppercase):
-    dir.Append(Function(DirectoryItem(Videos, title=page), url=LIBRARY % page))
-  return dir
+def MoviesMenu(url, title, page=1):
+
+	oc = ObjectContainer(title2=title)
+	
+	if title == 'Latest':
+		url = LATEST % page
+
+	for movie in HTML.ElementFromURL(url).xpath('//td[@class="indexTableTrailerImage"]'):
+		movie_url = BASE_URL + movie.xpath('./a')[0].get('href')
+
+		try:
+			movie_title = movie.xpath('./a/img')[0].get('title')
+		except:
+			movie_title = ''.join(movie.xpath('.//text()')).strip()
+		try:
+			thumb_url = movie.xpath('./a/img')[0].get('src')
+		except:
+			thumb_url = None
+
+		oc.add(DirectoryObject(key = Callback(MovieMenu, url=movie_url, title=movie_title, thumb_url=thumb_url), title=movie_title, thumb=Callback(Thumb, url=thumb_url)))
+
+	if title == 'Latest':
+		oc.add(DirectoryObject(key=Callback(MoviesMenu, url=url, title=title, page=page+1), title="More..."))
+
+	return oc	
+
 
 ####################################################################################################
-def Videos(sender, url):
-  dir = MediaContainer(title=sender.itemTitle)
-  for poster in HTML.ElementFromURL(url).xpath('//td[@class="indexTableTrailerImage"]/a'):
-    if len(poster.xpath('./img')) > 0:
-      url = BASE + poster.get('href')
-      thumb = poster.xpath('./img')[0].get('src')
-      title = poster.xpath('./img')[0].get('alt')
-      dir.Append(Function(PopupDirectoryItem(VideosMenu, title=title, thumb=Function(GetThumb, url=thumb)), url=url))
-  return dir
+def MovieMenu(url, title, thumb_url, section=None):
+	
+	oc = ObjectContainer(title2=title)
+	trailers = BuildTrailerDict(url)
+
+	if trailers['Trailers'] and trailers['Clips'] and section == None:
+		Log('canonical url is -----> ' + trailers['Trailers'][0]['item_urls']['source_url'])
+		latest = SanitizeSourceVideo(trailers['Trailers'][0], trailers['description'])
+		if latest:
+			oc.add(VideoClipObject(url = latest.url,thumb=thumb_url, title='Latest Trailer'))
+		oc.add(DirectoryObject(key = Callback(MovieMenu, url=url, title=title, thumb_url=thumb_url, section='Trailers'), title='Trailers', thumb=Callback(Thumb, url=thumb_url)))
+		oc.add(DirectoryObject(key = Callback(MovieMenu, url=url, title=title, thumb_url=thumb_url, section='Clips'), title='Clips', thumb=Callback(Thumb, url=thumb_url)))
+	else:
+		if not section:
+			section = 'Trailers'
+		for item in trailers[section]:
+			video_clip = None
+			video_clip = SanitizeSourceVideo(item,trailers['description'])
+			if video_clip:
+				oc.add(video_clip)
+
+	return oc
+	
+
 
 ####################################################################################################
-def VideosMenu(sender, url):
-  dir = MediaContainer(title2=sender.itemTitle)
-  defaultRes = Prefs['resolution']
+# BuildTrailerDic builds a dictionary of clips parsed from the page.  
+# Probably reasonable to assume there will always be at least one (latest) Trailer.
 
-  for row in HTML.ElementFromURL(url).xpath('//table[@class="bottomTable"]//tr'):
-    baseTitleItems = row.xpath('./td[@class="bottomTableName"]')
-    baseTitle = None
-    if len(baseTitleItems) > 0:
-      baseTitle = baseTitleItems[0].xpath('./span')[0].text
-    if baseTitle is not None:
-      for res in row.xpath('./td[@class="bottomTableResolution"]/a'):
-        resTitle = res.text
-        videoUrl = res.get('href')
-        if defaultRes == 'Prompt' or defaultRes == resTitle:
-          dir.Append(VideoItem(videoUrl, title='%s %s' % (baseTitle, resTitle)))
+def BuildTrailerDict(url):
+	
+	trailers = { 'Trailers': [], 'Clips': [] } 
+	movie_page = HTML.ElementFromURL(url)
 
-  if len(dir) == 0:
-    return MessageContainer('Empty', "There aren't any items to display")
-  else:
-    return dir
+	trailers['description'] = movie_page.xpath('//span[@itemprop="description"]')[0].text
+	
+	current_section = 'Trailers'
+
+	rows = movie_page.xpath('//table[@class="bottomTable"]/tr')
+	for row in rows:
+		if 'Trailers' in row.xpath('.//text()')[0]:
+			pass
+		elif 'Clips' in row.xpath('.//text()')[0]:
+			current_section = 'Clips'
+		elif row.xpath('.//@itemprop="trailer"'):
+			item_urls = {}
+			for res in row.xpath('./td[@class="bottomTableResolution"]/a'):
+				item_urls[res.text] = res.get('href')
+			item_urls['source_url'] = row.xpath('./td[@class="bottomTableIcon"]/a')[0].get('href')
+			trailer = {
+				'item_title' : row.xpath('./td[@class="bottomTableName"]/span')[0].text,
+				'item_date' : Datetime.ParseDate(row.xpath('./td[@class="bottomTableDate"]')[0].text).date(),
+				'item_urls' : item_urls
+			}
+			trailers[current_section].append(trailer)
+		else:
+			pass
+		
+	return trailers
 
 ####################################################################################################
-def GetThumb(url):
-  try:
-    data = HTTP.Request(url, cacheTime=CACHE_1MONTH)
-    return DataObject(data, 'image/jpeg')
-  except:
-    return Redirect(R(ICON))
+# Returns a sanitized VideoClipObject from a Trailers dict line item
+
+def SanitizeSourceVideo(item, description):
+	item_url = item['item_urls']['source_url']
+	video_clip = None
+	
+	# Some sources will have proper URL services, so use them if we can.
+	# try:
+	# 	video_clip = URLService.MetadataObjectForURL(item_url)
+	# 	Log('Service returned url: ' + video_clip.url)
+	# except:
+	# 	pass
+	
+	if 'apple.com' in item_url or 'youtube.com' in item_url:
+		try:
+			video_clip = URLService.MetadataObjectForURL(item_url)
+		except:
+			Log('Error loading medata from service for url: ' + item_url)
+			return None
+
+	# Annotate the title with the source of the underlying clip in the spirit of the original site.
+	# Determine if we can play this source file, filter out and log if not (should be rare).
+	playable = False
+	for pattern in SOURCES.iterkeys():
+		if pattern in item_url:
+			item_title = item['item_title'] + ' - ' + SOURCES[pattern]
+			if video_clip:
+				video_clip.title = item_title
+			playable = True
+	
+	if not video_clip and playable:
+		try:
+			url = item['item_urls']['1080p']
+		except:
+			url = item['item_urls'].itervalues().next()
+		video_clip = VideoClipObject(url = url, title = item_title, summary = description)
+	
+	if not video_clip:
+		Log('Don\'t know how to play source video at URL: %s' % item_url)
+
+	return video_clip
+
+####################################################################################################
+def Thumb(url):
+
+  if url:
+    try:
+      data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
+      return DataObject(data, 'image/jpeg')
+    except:
+      return Redirect(R('icon-default.png'))
+  return None
+

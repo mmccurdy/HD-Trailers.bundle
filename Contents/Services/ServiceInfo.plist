@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Search</key>
+    <dict>
+      <key>HD-Trailers</key>
+      <dict>
+        <key>Identifier</key>
+        <string>com.plexapp.plugins.hdtrailers</string>
+      </dict>
+    </dict>
+  <key>URL</key>
+  	<dict>
+    	<key>HD-Trailers</key>
+    	<dict>
+      	<key>URLPatterns</key>
+      		<array>
+        		<string>http://([^.]+.)?hd-trailers.net/.+</string>
+            <!-- make the this plugin service specifically handle these URLs to raw videos -->
+            <string>http://playlist.yahoo.com\/.+</string>
+            <string>http://([^.]+.)?stream.aol.com\/.+</string>
+            <string>http://([^.]+.)?wdmp.rd.llnwd.net\/.+</string>
+      		</array>
+      	<key>TestURLs</key>
+      		<array>
+        		<string>http://www.hd-trailers.net/movie/battleship/</string>
+      		</array>
+    	</dict>
+  	</dict>
+</dict>
+</plist>
