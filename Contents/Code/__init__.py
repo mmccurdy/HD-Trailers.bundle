@@ -160,14 +160,8 @@ def BuildTrailerDict(url):
 def SanitizeSourceVideo(item, description, thumb_url):
 	item_url = item['item_urls']['source_url']
 	video_clip = None
-	
-	# Some sources will have proper URL services, so use them if we can.
-	# try:
-	# 	video_clip = URLService.MetadataObjectForURL(item_url)
-	# 	Log('Service returned url: ' + video_clip.url)
-	# except:
-	# 	pass
-	
+		
+	# Sources known to have good URL services that we can rely on instead of our own.
 	if 'apple.com' in item_url or 'youtube.com' in item_url:
 		try:
 			video_clip = URLService.MetadataObjectForURL(item_url)
@@ -190,6 +184,7 @@ def SanitizeSourceVideo(item, description, thumb_url):
 			url = item['item_urls']['1080p']
 		except:
 			url = item['item_urls'].itervalues().next()
+	
 		video_clip = VideoClipObject(url = url, title = item_title, summary = description, thumb=Callback(Thumb, url=thumb_url))
 	
 	if not video_clip:
@@ -207,4 +202,3 @@ def Thumb(url):
     except:
       return Redirect(R('icon-default.png'))
   return None
-
