@@ -2,7 +2,7 @@
 # 2.1 rewrite, URL service by Mike McCurdy June 2012.
 
 # TODO: 
-# Make Yahoo! quality selection work (right now it will play 1080p or the first available quality failing that).
+# Make Yahoo! and hd-trailers quality selection work (right now it will play 1080p or the first available quality failing that).
 # Library alphabetical section calls are slow, but mostly because the underlying pages are huge.
 # Thumbnails from the site are poster aspect ratio, which looks awful in the VideoClipObject list previews in mediastream.
 
@@ -97,10 +97,11 @@ def MoviesMenu(url, title, page=1):
 def MovieMenu(url, title, thumb_url, section=None):
 	
 	oc = ObjectContainer(title2=title)
-	trailers = BuildTrailerDict(url)
+	html = HTML.ElementFromURL(url)
+	trailers = BuildTrailerDict(html)
 
 	if trailers['Trailers'] and trailers['Clips'] and section == None:
-		Log('canonical url is -----> ' + trailers['Trailers'][0]['item_urls']['source_url'])
+		#Log('canonical url is -----> ' + trailers['Trailers'][0]['item_urls']['source_url'])
 		latest = SanitizeSourceVideo(trailers['Trailers'][0], trailers['description'], thumb_url)
 		if latest:
 			oc.add(VideoClipObject(url = latest.url,thumb=thumb_url, title='Latest Trailer'))
@@ -123,16 +124,13 @@ def MovieMenu(url, title, thumb_url, section=None):
 # BuildTrailerDic builds a dictionary of clips parsed from the page.  
 # Probably reasonable to assume there will always be at least one (latest) Trailer.
 
-def BuildTrailerDict(url):
+def BuildTrailerDict(html):
 	
 	trailers = { 'Trailers': [], 'Clips': [] } 
-	movie_page = HTML.ElementFromURL(url)
-
-	trailers['description'] = movie_page.xpath('//span[@itemprop="description"]')[0].text
+	trailers['description'] = html.xpath('//span[@itemprop="description"]')[0].text
 	
 	current_section = 'Trailers'
-
-	rows = movie_page.xpath('//table[@class="bottomTable"]/tr')
+	rows = html.xpath('//table[@class="bottomTable"]/tr')
 	for row in rows:
 		if 'Trailers' in row.xpath('.//text()')[0]:
 			pass
@@ -162,7 +160,7 @@ def SanitizeSourceVideo(item, description, thumb_url):
 	video_clip = None
 		
 	# Sources known to have good URL services that we can rely on instead of our own.
-	if 'apple.com' in item_url or 'youtube.com' in item_url:
+	if 'apple.com' in item_url or 'youtube.com' or 'hd-trailers.net' in item_url:
 		try:
 			video_clip = URLService.MetadataObjectForURL(item_url)
 		except:

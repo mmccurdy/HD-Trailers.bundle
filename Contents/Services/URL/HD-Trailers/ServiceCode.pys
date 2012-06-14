@@ -8,10 +8,9 @@ def MetadataObjectForURL(url):
 	title = html.xpath('//h1[@class="previewTitle"]')[0].text
 	summary = html.xpath('//span[@itemprop="description"]')[0].text
 	thumb = html.xpath('//span[@class="topTableImage"]/img')[0].get('src')
-	clip_url = html.xpath('//a[@class="playLatest"]')[0].get('href')
 
 	return VideoClipObject(
-			 url = clip_url,
+			 url = url,
 			 title = title,
 			 summary = summary,
 			 thumb = thumb)
@@ -61,8 +60,7 @@ def PlayVideo(url, fmt=''):
 			if e.headers.has_key('Location'):
 				url = e.headers['Location']
 
-	return Redirect(url)	
-
+	return Redirect(url)
 
 ####################################################################################################
 def NormalizeURL(url):
